@@ -1,0 +1,136 @@
+
+<html>
+  <body>
+    <script src="simplepeer.min.js"></script> 
+    <script>
+	
+		//Start websocket connection
+		if (window.location.href.indexOf("127.0.0.1") == -1) {
+			webSocket = new WebSocket("ws://shrek.best:8080");
+		}else{
+			webSocket = new WebSocket("ws://127.0.0.1:8080");		
+		}
+		
+	
+
+			
+		//Level of elevation
+		/* 
+		0=disconnected
+		1=TCP
+		2=UDP
+		*/
+		elevation=0;
+				
+		//Reacts to certain packet types
+		function message_receive(data){
+		
+		//Check if it is an array, if so set first index to switch input, if not, set the whole value to switch value
+		if(Array.isArray(data)==true){
+			var switchValue = data[0];
+		}else{
+			var switchValue = data;
+		}
+		
+			switch(switchValue){
+				case "connect_signal":
+					p.signal(JSON.parse(data[1]));	
+				break;
+				case "connect_latency_tcp":
+					console.log('TCP latency: '+(Date.now()-pingTime)+'ms');
+				break;
+				case "connect_latency_udp":
+					console.log('UDP latency: '+(Date.now()-pingTime)+'ms');
+				break;
+			}
+			
+		}
+				
+		//Sends a latency test to desired protocol
+		function latency_test(protocol){
+		
+			pingTime = Date.now();
+			
+			switch(protocol){
+				case 1:
+					message_send_tcp(['connect_latency_tcp']);
+				break;
+				case 2:
+					message_send_udp(['connect_latency_udp']);		
+				break;
+			}
+		}	
+		
+		//Sends a message depending on current elevation
+		function message_send(data){
+			switch(elevation){
+				//TCP
+				case 1:
+					webSocket.send(JSON.stringify(data));
+				break;
+				//UDP
+				case 2:
+					p.send(JSON.stringify(data))
+				break;
+			}
+		}
+		
+
+		function message_send_tcp(data){
+			
+			if(elevation>=1){
+				webSocket.send(JSON.stringify(data));			
+			}
+		}
+
+		function message_send_udp(data){
+			
+			if(elevation==2){
+				p.send(JSON.stringify(data));			
+			}
+		}
+				
+		//When we connect on the websocket we must then initiate
+		webSocket.onopen = function (event) {
+			elevation=1;
+			console.log('CONNECT TCP')
+			//When we receive the  reply from the server signal it 
+			webSocket.onmessage = function (event) {
+				var message = JSON.parse(event.data);
+				console.log('TCP data: '+message);
+				message_receive(message);
+
+			}
+			
+			//Start simplePeer connection
+			p = new SimplePeer({
+				initiator: true,
+				trickle: false
+			})
+
+			p.on('error', err => console.log('error', err))
+
+			//Wait for our initial signal to initiliaze connection with server on UDP end then send back to complete connection
+			p.on('signal', data => {
+				console.log(data);
+				message_send(["connect_signal",JSON.stringify(data)]);
+			})
+
+
+			p.on('connect', () => {
+				elevation=2;
+				console.log('CONNECT UDP')
+			})
+
+			p.on('data', data => {
+				data=JSON.parse(data);
+				console.log('UDP data: '+data);
+				message_receive(data);
+			})
+		}
+
+
+
+    </script> 
+  </body>
+</html>
