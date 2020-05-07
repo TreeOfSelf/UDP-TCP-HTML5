@@ -43,8 +43,37 @@
 				case "connect_latency_udp":
 					console.log('UDP latency: '+(Date.now()-pingTime)+'ms');
 				break;
-				case "peer_responded":
-					console.log('got here');
+				case "peer_final":
+					if(peer!=null){
+						peer.signal(JSON.parse(data[1]));
+					}
+				break;
+				case "peer_respond":
+			
+				  peer = new SimplePeer({
+						initiator: false,
+						trickle: false,
+					  })
+
+					  peer.on('error', err => console.log('error', err))
+
+					  peer.on('signal', data => {
+						console.log('SIGNAL', JSON.stringify(data))
+						message_send_tcp(['peer_responded',JSON.stringify(data)]);
+						//document.querySelector('#outgoing').textContent = JSON.stringify(data)
+					  })
+
+					  peer.on('connect', () => {
+						console.log('CONNECT')
+						peer.send('whatever' + Math.random())
+					  })
+
+					  peer.on('data', data => {
+						console.log('data: ' + data)
+					  })
+					  
+					  peer.signal(JSON.parse(data[1]));
+				
 				break;
 				
 				case "peer_create":

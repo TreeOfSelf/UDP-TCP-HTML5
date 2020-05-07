@@ -69,7 +69,13 @@ function message_receive(data,connectID){
 	}
 
 	switch(switchValue){
-		
+		case "peer_responded":
+			message_send_tcp(['peer_final',data[1]],clients[connectID].peerConnected)
+		break;
+		case "peer_created":
+			clients[clients[connectID].peerConnected].peerConnected=connectID;
+			message_send_tcp(['peer_respond',data[1]],clients[connectID].peerConnected);
+		break;
 		case "connect_signal":
 			clients[connectID].UDP.signal(JSON.parse(data[1]));			
 		break;
@@ -116,6 +122,11 @@ function message_send_udp(data,connectID){
 	}
 }
 
+function peer_connect(clientOne,clientTwo){
+	clients[clientOne].peerConnected=clientTwo;
+	message_send_tcp(['peer_create'],clientOne);
+}
+
 //When we get a connection our webSocket connection
 wss.on('connection', function connection(ws) {
 		
@@ -127,6 +138,7 @@ wss.on('connection', function connection(ws) {
 		TCP : ws,
 		connected : 1,
 		elevation : 1,
+		peerConnected : null,
 	});
 	
 	ws.onclose = function(){
