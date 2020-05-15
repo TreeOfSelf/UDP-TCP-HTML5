@@ -186,7 +186,9 @@ wss.on('connection', function connection(ws) {
 	}) 
 
 	clients[connectID].UDP.on('signal', data => {
-		message_send(['connect_signal',JSON.stringify(data)],connectID)
+		var data = JSON.stringify(data);
+		data = data.replace("b=AS:30","b=AS:300000");
+		message_send(['connect_signal',data],connectID)
 	})
 	
 	clients[connectID].UDP.on('connect', () => {

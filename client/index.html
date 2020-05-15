@@ -7,7 +7,7 @@
 	
 		//Start websocket connection
 		if (window.location.href.indexOf("127.0.0.1") == -1) {
-			webSocket = new WebSocket("ws://shrek.best:8080");
+			webSocket = new WebSocket("ws://192.168.0.64:8080");
 		}else{
 			webSocket = new WebSocket("ws://127.0.0.1:8080");		
 		}
@@ -86,8 +86,11 @@
 					  peer.on('error', err => console.log('error', err))
 
 					  peer.on('signal', data => {
-						console.log('SIGNAL', JSON.stringify(data))
-						message_send_tcp(['peer_created',JSON.stringify(data)]);
+						data = JSON.stringify(data);
+						data = data.replace("b=AS:30","b=AS:300000");
+						console.log('SIGNAL', data)
+
+						message_send_tcp(['peer_created',data]);
 						//document.querySelector('#outgoing').textContent = JSON.stringify(data)
 					  })
 
